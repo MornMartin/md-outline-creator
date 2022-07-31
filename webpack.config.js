@@ -32,6 +32,10 @@ module.exports = {
                     from: './package.json',
                     to: path.resolve(__dirname, 'dist'),
                 },
+                {
+                    from: './README.md',
+                    to: path.resolve(__dirname, 'dist'),
+                },
             ],
         }),
         new CliJsDecoratePlugin({files: [path.resolve(__dirname, 'dist', 'cli.js')]})
