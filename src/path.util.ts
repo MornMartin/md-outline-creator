@@ -41,7 +41,7 @@ export const isAbsolutePath =(p: string): boolean => {
  * @returns 
  */
 export const getRelativePath = (from: string, to: string): string => {
-    return path.relative(from, to);
+    return splitPath(path.relative(from, to)).join('/');
 }
 /**
  * 解析路径信息

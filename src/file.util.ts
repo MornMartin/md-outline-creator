@@ -1,7 +1,7 @@
 import { getResolvedPath } from "./path.util";
 const fs = require('fs');
 const path = require('path');
-
+const rm = require('rimraf');
 /**
  * 扫描文件夹
  * @param dir 文件夹目录
@@ -130,6 +130,23 @@ export const isExisted = (path: string): Promise<boolean> => {
     return new Promise(resolve => {
         fs.exists(resolvedPath, (res) => {
             resolve(res)
+        })
+    })
+}
+/**
+ * 删除文件
+ * @param path 文件地址
+ * @returns 
+ */
+export const deleteFile = (path: string): Promise<boolean> => {
+    const resolvedPath = getResolvedPath(path);
+    return new Promise(resolve => {
+        rm(resolvedPath, (err) => {
+            if (err) {
+                resolve(false)
+            }else {
+                resolve(true)
+            };
         })
     })
 }

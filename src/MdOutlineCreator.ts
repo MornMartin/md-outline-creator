@@ -1,6 +1,6 @@
 import { getMdOutline, IHeadingNode } from './md.util';
 import { decodeFilePaths, IFileInfo, getResolvedPath, parsePath, getRelativePath, getExtname } from './path.util';
-import { getMdFiles, isDirectory, readFileText, writeFile } from "./file.util";
+import { deleteFile, getMdFiles, isDirectory, readFileText, writeFile } from "./file.util";
 
 export type TFileList = string[];
 
@@ -121,7 +121,12 @@ export default class MdOutlineCreator {
         this.dispatchGetters(this._outlineMapGetter, outline);
         this._outlineMapGetter = [];
     }
+    /**
+     * 执行创建
+     */
     private async doCreate() {
+        console.log(`===> 删除${this.output}`)
+        await this.deleteExistedOutFile()
         console.log('===> 获取文档列表')
         await this.getFileList();
         console.log(await this.files)
@@ -130,6 +135,13 @@ export default class MdOutlineCreator {
         await this.encodeOutlineMap();
         await this.writeDocFile();
         console.log('===| 创建成功')
+    }
+    /**
+     * 删除已存在的导出文件
+     * @returns 
+     */
+    private async deleteExistedOutFile() {
+        return await deleteFile(this.output)
     }
     /**
      * 获取文件列表
@@ -206,7 +218,11 @@ export default class MdOutlineCreator {
     private createHashRoute(title: string): string {
         const matchWhiteSpace = /\s/g;
         const matchInvalidChar = /\_|\(|\)/g
-        return title.toLowerCase().replace(matchWhiteSpace, '-').replace(matchInvalidChar, '')
+        return title
+            .toLowerCase()
+            .replace(matchWhiteSpace, '-')
+            .replace(matchInvalidChar, '')
+            .replace('\.', '')
     }
     /**
      * 创建大纲列表
