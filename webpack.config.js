@@ -1,6 +1,6 @@
 const path = require('path');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
-const CliJsDecoratePlugin = require('./CliJsDecoratePlugin');
+const CliDecoratePlugin = require('./CliDecoratePlugin');
 module.exports = {
     mode: 'development',
     devtool: 'source-map',
@@ -38,7 +38,7 @@ module.exports = {
                 },
             ],
         }),
-        new CliJsDecoratePlugin({files: [path.resolve(__dirname, 'dist', 'cli.js')]})
+        new CliDecoratePlugin({files: [path.resolve(__dirname, 'dist', 'cli.js')]})
     ],
     resolve: {
         alias: {

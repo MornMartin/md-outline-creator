@@ -2,24 +2,30 @@ import { getMdOutline, IHeadingNode } from './md.util';
 import { decodeFilePaths, IFileInfo, getResolvedPath, parsePath, getRelativePath, getExtname } from './path.util';
 import { deleteFile, getMdFiles, isDirectory, readFileText, writeFile } from "./file.util";
 
-export type TFileList = string[];
+type TFileList = string[];
 
-export type TFileInfoList = IFileInfo[];
+type TFileInfoList = IFileInfo[];
 
-export type TOutlineMap = {[file: string]: IHeadingNode[]}
+type TOutlineMap = {[file: string]: IHeadingNode[]}
+/**
+ * 自定义hash路由转换方法
+ */
+type TDefinedHashFormatter = (title: string) => string;
 
 export interface IOptions {
     isIgnoreEmptyFile?: boolean;
+    hashFormatter?: 'GitHub' | TDefinedHashFormatter;
 }
 
-export interface IFolderInfo {
+interface IFolderInfo {
     name: string;
     files: TFileInfoList;
 }
 
-export const getDefaultOptions = (): IOptions => {
+const getDefaultOptions = (): IOptions => {
     return {
-        isIgnoreEmptyFile: true
+        isIgnoreEmptyFile: true,
+        hashFormatter: 'GitHub'
     }
 };
 
@@ -34,8 +40,8 @@ export default class MdOutlineCreator {
     private _outlineMap: TOutlineMap = {};
     private _outlineMapGetter: ((map: TOutlineMap) => void)[] = [];
     constructor(input: string, output: string, options: IOptions = {}) {
-        this.input = input;
-        this.output = output;
+        this.input = this.getValidInput(input);
+        this.output = this.getValidOutput(output);
         const defaultOptions = getDefaultOptions();
         this.options = {...defaultOptions, ...options};
         this.doCreate();
@@ -72,12 +78,6 @@ export default class MdOutlineCreator {
         return new Promise(resove => {
             this._outlineMapGetter.push(resove)
         })
-    }
-    /**
-     * 输入目录
-     */
-    get inputFolder(): string {
-        return parsePath(this.input).dir;
     }
     /**
      * 导出目录
@@ -144,6 +144,37 @@ export default class MdOutlineCreator {
         return await deleteFile(this.output)
     }
     /**
+     * 获取输入目录
+     * @param input 
+     * @returns 
+     */
+    private async getInputFolder(input: string) {
+        const isDir = await isDirectory(input);
+        if(isDir) {
+            return input;
+        }
+        return parsePath(this.input).dir;
+    }
+    /**
+     * 获取有效输入路径
+     */
+    private getValidInput(input: string = './') {
+        const absolutePath = getResolvedPath(input);
+        return absolutePath;
+    }
+    /**
+     * 获取有效输出路径
+     */
+    private getValidOutput(output: string) {
+        if(!output) throw Error('请指定输出文档路径');
+        const absolutePath = getResolvedPath(output);
+        const extName = getExtname(absolutePath);
+        if(extName.toUpperCase() !== 'MD') {
+            return absolutePath
+        }
+        return `${absolutePath}.md`;
+    }
+    /**
      * 获取文件列表
      */
     private async getFileList() {
@@ -163,7 +194,8 @@ export default class MdOutlineCreator {
      */
     private async encodeFileInfoList() {
         const files = await this.files;
-        this._fileInfoList = decodeFilePaths(files, this.inputFolder);
+        const inputFolder = await this.getInputFolder(this.input);
+        this._fileInfoList = decodeFilePaths(files, inputFolder);
         this.dispatchFileInfoListGetters(this._fileInfoList)
     }
     /**
@@ -216,13 +248,28 @@ export default class MdOutlineCreator {
      * @returns 
      */
     private createHashRoute(title: string): string {
-        const matchWhiteSpace = /\s/g;
-        const matchInvalidChar = /\_|\(|\)/g
-        return title
-            .toLowerCase()
-            .replace(matchWhiteSpace, '-')
-            .replace(matchInvalidChar, '')
-            .replace('\.', '')
+        const formatter = this.getHashFormatter();
+        return formatter(title);
+    }
+    /**
+     * 查询hash路由转换方法
+     * @returns 
+     */
+    private getHashFormatter() {
+        if(this.options.hashFormatter === 'GitHub') {
+            return (title: string) => {
+                const matchWhiteSpace = /\s/g;
+                const matchInvalidChar = /\_|\(|\)|\.|、/g
+                return title
+                    .toLowerCase()
+                    .replace(matchWhiteSpace, '-')
+                    .replace(matchInvalidChar, '')
+            }
+        }
+        if(typeof this.options.hashFormatter === 'function') {
+            return this.options.hashFormatter;
+        }
+        return (title) => title;
     }
     /**
      * 创建大纲列表
@@ -245,11 +292,11 @@ export default class MdOutlineCreator {
      * @param file 
      * @returns 
      */
-    private async createFileOutline(file: IFileInfo): Promise<string> {
+    private async createFileOutline(file: IFileInfo, folderName: string): Promise<string> {
         const outline = await this.getOutlineInfo(file.path);
         const outlineList = this.createOutlineList(file.path, outline, 0);
         if(!outlineList && this.options.isIgnoreEmptyFile) return '';
-        return `\n## ${file.fileName}\n${outlineList}`;
+        return `\n## ${folderName && `${folderName}/` || ''}${file.fileName}\n${outlineList}`;
     }
     /**
      * 创建目录下文件内容大纲
@@ -259,10 +306,10 @@ export default class MdOutlineCreator {
         const files = folder.files;
         let temp = '';
         for(const file of files) {
-            temp += await this.createFileOutline(file);
+            temp += await this.createFileOutline(file, folder.name);
         }
         if(!temp) return '';
-        return `${folder.name && `\n# ${folder.name}` || ''}\n${temp}`;
+        return `\n${temp}`;
     }
     /**
      * 写入文档内容
