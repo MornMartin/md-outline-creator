@@ -1,6 +1,7 @@
 import { getMdOutline, IHeadingNode } from './md.util';
 import { decodeFilePaths, IFileInfo, getResolvedPath, parsePath, getRelativePath, getExtname } from './path.util';
 import { deleteFile, getMdFiles, isDirectory, readFileText, writeFile } from "./file.util";
+import { githubHashFormatter, defaultFormatter } from "./hash.util";
 
 type TFileList = string[];
 
@@ -257,19 +258,12 @@ export default class MdOutlineCreator {
      */
     private getHashFormatter() {
         if(this.options.hashFormatter === 'GitHub') {
-            return (title: string) => {
-                const matchWhiteSpace = /\s/g;
-                const matchInvalidChar = /\_|\(|\)|\.|、/g
-                return title
-                    .toLowerCase()
-                    .replace(matchWhiteSpace, '-')
-                    .replace(matchInvalidChar, '')
-            }
+            return githubHashFormatter;
         }
         if(typeof this.options.hashFormatter === 'function') {
             return this.options.hashFormatter;
         }
-        return (title) => title;
+        return defaultFormatter;
     }
     /**
      * 创建大纲列表
