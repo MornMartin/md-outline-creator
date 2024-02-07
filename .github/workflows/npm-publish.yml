@@ -15,9 +15,8 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 16
-      - run: echo pwd
       - run: npm install
-      - run: npm build
+      - run: npm run build
 
   publish-npm:
     needs: build
