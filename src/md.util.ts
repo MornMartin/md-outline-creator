@@ -146,5 +146,8 @@ export const createEmptyRenderNode = (tag: string): IRenderNode => {
  * @returns 
  */
 export const createRenderNode = (tag: string, children: TToken[]): IRenderNode => {
+    if(!children) {
+        return null;
+    }
     return {...createEmptyRenderNode(tag), content: encodeRenderTree(children)}
 }

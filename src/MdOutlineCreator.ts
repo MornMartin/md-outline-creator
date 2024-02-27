@@ -1,6 +1,6 @@
 import { getMdOutline, IHeadingNode } from './md.util';
 import { decodeFilePaths, IFileInfo, getResolvedPath, parsePath, getRelativePath, getExtname } from './path.util';
-import { deleteFile, getMdFiles, isDirectory, readFileText, writeFile } from "./file.util";
+import { deleteFile, getMdFiles, isDirectory, isMdFile, readFileText, writeFile } from "./file.util";
 import { githubHashFormatter, defaultFormatter } from "./hash.util";
 
 type TFileList = string[];
@@ -169,9 +169,8 @@ export default class MdOutlineCreator {
     private getValidOutput(output: string) {
         if(!output) throw Error('请指定输出文档路径');
         const absolutePath = getResolvedPath(output);
-        const extName = getExtname(absolutePath);
-        if(extName.toUpperCase() !== 'MD') {
-            return absolutePath
+        if(isMdFile(absolutePath)) {
+            return absolutePath;
         }
         return `${absolutePath}.md`;
     }

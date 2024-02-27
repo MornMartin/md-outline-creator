@@ -73,6 +73,7 @@ export const getFiles = async (filePath: string | string[]) => {
     }
     return temp;
 }
+
 /**
  * 获取路径下markdown文件
  * @param filePath 目录/目录列表
@@ -80,8 +81,17 @@ export const getFiles = async (filePath: string | string[]) => {
 export const getMdFiles = async (filePath: string | string[]) => {
     const allFiles = await getFiles(filePath);
     return allFiles.filter(item => {
-        return /.md$/.test(item)
+        return isMdFile(item);
     })
+}
+
+/**
+ * 判断是否markdown文件后缀
+ * @param filePath 
+ * @returns 
+ */
+export const isMdFile = (filePath: string):boolean => {
+    return /\.md$/.test(filePath) || /\.MD$/.test(filePath);
 }
 
 /**
@@ -108,11 +118,36 @@ export const readFileText = (src: string): Promise<string> => {
  * @param content 内容
  * @returns 
  */
-export const writeFile = (path: string, content: string): Promise<boolean> => {
-    return new Promise(resolve => {
-        fs.writeFile(path, content, err => {
+export const writeFile = (filePath: string, content: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
+            const dir = path.dirname(filePath);
+            try{
+                await createDir(dir);
+            }catch(err) {
+                reject(err)
+            }
+            fs.writeFile(filePath, content, err => {
+                if(err) {
+                    resolve(err);
+                }else{
+                    resolve(true);
+                }
+            });
+        })
+    })
+}
+
+/**
+ * 创建目录
+ * @param dir 
+ * @returns 
+ */
+export const createDir = (dir: string): Promise<boolean> => {
+    return new Promise((resolve, reject) => {
+        fs.mkdir(dir, { recursive: true }, err => {
             if(err) {
-                resolve(false)
+                reject(err)
             }else{
                 resolve(true);
             }
@@ -133,19 +168,20 @@ export const isExisted = (path: string): Promise<boolean> => {
         })
     })
 }
+
 /**
  * 删除文件
  * @param path 文件地址
  * @returns 
  */
-export const deleteFile = (path: string): Promise<boolean> => {
+export const deleteFile = (path: string): Promise<void> => {
     const resolvedPath = getResolvedPath(path);
-    return new Promise(resolve => {
+    return new Promise((resolve, reject) => {
         rm(resolvedPath, (err) => {
             if (err) {
-                resolve(false)
+                reject(err)
             }else {
-                resolve(true)
+                resolve()
             };
         })
     })
