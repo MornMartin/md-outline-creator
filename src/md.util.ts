@@ -151,3 +151,11 @@ export const createRenderNode = (tag: string, children: TToken[]): IRenderNode =
     }
     return {...createEmptyRenderNode(tag), content: encodeRenderTree(children)}
 }
+/**
+ * 是否链接
+ * @param t 
+ * @returns 
+ */
+export const isLink = (t: string): boolean => {
+    return /^\[.+\]\(.+\)$/.test(t);
+}

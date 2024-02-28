@@ -1,7 +1,7 @@
-import { getMdOutline, IHeadingNode } from './md.util';
+import { getMdOutline, IHeadingNode, isLink } from './md.util';
 import { decodeFilePaths, IFileInfo, getResolvedPath, parsePath, getRelativePath, getExtname } from './path.util';
 import { deleteFile, getMdFiles, isDirectory, isMdFile, readFileText, writeFile } from "./file.util";
-import { githubHashFormatter, defaultFormatter } from "./hash.util";
+import { githubHashFormatter, defaultTitleFormatter, defaultHashFormatter } from "./formatter.util";
 
 type TFileList = string[];
 
@@ -11,11 +11,12 @@ type TOutlineMap = {[file: string]: IHeadingNode[]}
 /**
  * 自定义hash路由转换方法
  */
-type TDefinedHashFormatter = (title: string) => string;
+type TDefinedFormatter = (s: string) => string;
 
 export interface IOptions {
     isIgnoreEmptyFile?: boolean;
-    hashFormatter?: 'GitHub' | TDefinedHashFormatter;
+    hashFormatter?: 'GitHub' | TDefinedFormatter;
+    titleFormatter?: 'GitHub' | TDefinedFormatter;
 }
 
 interface IFolderInfo {
@@ -26,7 +27,8 @@ interface IFolderInfo {
 const getDefaultOptions = (): IOptions => {
     return {
         isIgnoreEmptyFile: true,
-        hashFormatter: 'GitHub'
+        hashFormatter: 'GitHub',
+        titleFormatter: 'GitHub',
     }
 };
 
@@ -248,8 +250,7 @@ export default class MdOutlineCreator {
      * @returns 
      */
     private createHashRoute(title: string): string {
-        const formatter = this.getHashFormatter();
-        return formatter(title);
+        return this.getHashFormatter()(title);
     }
     /**
      * 查询hash路由转换方法
@@ -262,7 +263,28 @@ export default class MdOutlineCreator {
         if(typeof this.options.hashFormatter === 'function') {
             return this.options.hashFormatter;
         }
-        return defaultFormatter;
+        return defaultHashFormatter;
+    }
+    /**
+     * 创建有效标题
+     * @param title 
+     * @returns 
+     */
+    private createTitle(title: string) {
+        return this.getTitleFormatter()(title);
+    }
+    /**
+     * 查询标题转换方法
+     * @returns 
+     */
+    private getTitleFormatter() {
+        if(this.options.titleFormatter === 'GitHub') {
+            return defaultTitleFormatter;
+        }
+        if(typeof this.options.titleFormatter === 'function') {
+            return this.options.titleFormatter;
+        }
+        return defaultTitleFormatter;
     }
     /**
      * 创建大纲列表
@@ -274,9 +296,8 @@ export default class MdOutlineCreator {
         return outline.map(item => {
             const tab = '\t'.repeat(tabLevel)
             const children = this.createOutlineList(filePath, item.children, tabLevel + 1);
-            const target = getRelativePath(this.outputFolder, filePath)
-            const hash = this.createHashRoute(item.text);
-            const link = `[${item.text}](${target}#${hash})`
+            const target = getRelativePath(this.outputFolder, filePath);
+            const link = isLink(item.text) ? item.text : `[${this.createTitle(item.text)}](${target}#${this.createHashRoute(item.text)})`;
             return `\n${tab}* ${link}\n${children}`;
         }).join('');
     }

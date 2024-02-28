@@ -14,8 +14,9 @@ class CliJsDecoratePlugin {
                 if(!isCliExsited) {
                     return console.error(`CliJsDecoratePlugin：${file} 不存在`)
                 };
-                const content = fs.readFileSync(file, 'utf-8');
-                fs.writeFile(file, `#!/usr/bin/env node\n${content}`, {flag: 'w+'}, err => {
+                const content = fs.readFileSync(file, 'utf-8') || '';
+                const decorate = `#!/usr/bin/env node\n`;
+                fs.writeFile(file, `${decorate}${content.replace(new RegExp(decorate, 'g'), '')}`, {flag: 'w+'}, err => {
                     if(err) {
                         console.error(err)
                     }

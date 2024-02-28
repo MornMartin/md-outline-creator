@@ -16,6 +16,15 @@ export const githubHashFormatter = (title: string) => {
  * @param title 
  * @returns 
  */
-export const defaultFormatter = (title: string) => {
+export const defaultHashFormatter = (title: string) => {
     return title;
+}
+
+/**
+ * 默认标题转换方法（去除[]()）
+ * @param title 
+ * @returns 
+ */
+export const defaultTitleFormatter = (title: string) => {
+    return title.replace(/\\*\(/g, '\\(').replace(/\\*\)/g, '\\)').replace(/\\*\[/g, '\\[').replace(/\\*\]/g, '\\]');
 }
